@@ -1,0 +1,22 @@
+{
+    "vegetables": {
+        "tomato": {
+            "price": 40.0,
+            "stock": 411.0
+        }
+    },
+    "orders": [
+        {
+            "name": "tomato",
+            "quantity": "2.0kg",
+            "amount": 80.0,
+            "date": "2025-06-28 23:11:08"
+        },
+        {
+            "name": "tomato",
+            "quantity": "5.0kg",
+            "amount": 200.0,
+            "date": "2025-06-28 23:11:33"
+        }
+    ]
+}

@@ -1,0 +1,11 @@
+{
+    "vegetables": {
+        "tomatto": {
+            "price": 80.0,
+            "stock": 100.0,
+            "cost": 45.0
+        }
+    },
+    "orders": [],
+    "backup_date": "2025-07-12T17:40:12.332665"
+}

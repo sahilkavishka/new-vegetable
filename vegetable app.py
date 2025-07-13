@@ -469,6 +469,10 @@ class VegetableMarket:
             
             # Calculate total
             total_amount = quantity_kg * self.vegetables[veg_name]["price"]
+
+            cost_price = self.vegetables[veg_name].get("cost", 0)
+            profit = round((self.vegetables[veg_name]["price"] - cost_price) * quantity_kg, 2)
+
             
             # Update stock
             self.vegetables[veg_name]["stock"] -= quantity_kg
@@ -478,7 +482,8 @@ class VegetableMarket:
                 "name": veg_name,
                 "quantity": f"{quantity}{unit}",
                 "amount": round(total_amount, 2),
-                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "profit":profit,
             }
             self.orders.append(order)
             
@@ -649,7 +654,7 @@ class VegetableMarket:
         # Create input dialog
         dialog = tk.Toplevel(self.root)
         dialog.title("Add New Vegetable")
-        dialog.geometry("300x200")
+        dialog.geometry("300x400")
         dialog.configure(bg='white')
         dialog.transient(self.root)
         dialog.grab_set()
@@ -669,6 +674,12 @@ class VegetableMarket:
         price_var = tk.StringVar()
         tk.Entry(dialog, textvariable=price_var, width=20).pack(pady=5)
         
+        # Cost Price input
+        tk.Label(dialog, text="Cost Price (Rs/kg):", bg='white').pack()
+        cost_var = tk.StringVar()
+        tk.Entry(dialog, textvariable=cost_var, width=20).pack(pady=5)
+
+
         # Stock input
         tk.Label(dialog, text="Stock (kg):", bg='white').pack()
         stock_var = tk.StringVar()
@@ -687,6 +698,7 @@ class VegetableMarket:
                 
                 price = float(price_var.get())
                 stock = float(stock_var.get())
+                cost=float(cost_var.get())
                 
                 if price <= 0:
                     messagebox.showerror("Error", "Price must be positive!")
@@ -696,7 +708,11 @@ class VegetableMarket:
                     messagebox.showerror("Error", "Stock cannot be negative!")
                     return
                 
-                self.vegetables[name] = {"price": price, "stock": stock}
+                if cost <= 0:
+                   messagebox.showerror("Error", "Cost must be positive!")
+                   return
+                
+                self.vegetables[name] = {"price": price, "stock": stock,"cost":cost}
                 if self.save_data():
                     self.show_message(f"'{name.capitalize()}' added successfully!", "success")
                     dialog.destroy()
@@ -867,6 +883,7 @@ class VegetableMarket:
         
         # Calculate comprehensive statistics
         total_revenue = sum(order.get("amount", 0) for order in self.orders)
+        total_profit = sum(order.get("profit", 0) for order in self.orders)
         total_orders = len(self.orders)
         total_vegetables = len(self.vegetables)
         total_stock_value = sum(veg["price"] * veg["stock"] for veg in self.vegetables.values())
@@ -896,7 +913,9 @@ class VegetableMarket:
         financial_stats = [
             ("Total Revenue", f"Rs. {total_revenue:.2f}"),
             ("Average Order Value", f"Rs. {avg_order_value:.2f}"),
-            ("Current Stock Value", f"Rs. {total_stock_value:.2f}")
+            ("Current Stock Value", f"Rs. {total_stock_value:.2f}"),
+            ("Total Profit", f"Rs. {total_profit:.2f}")
+
         ]
         
         for i, (label, value) in enumerate(financial_stats):
@@ -932,82 +951,93 @@ class VegetableMarket:
             tk.Label(warning_frame, text=warning_text, font=("Arial", 10), bg='white', fg='red', wraplength=400).pack(padx=10, pady=5)
 
     def show_sales_report(self):
-        """Show detailed sales report"""
-        self.clear_content()
-        
-        content_frame = tk.Frame(self.main_frame, bg='#f8f9fa')
-        content_frame.grid(row=1, column=0, sticky='nsew')
-        content_frame.grid_rowconfigure(1, weight=1)
-        content_frame.grid_columnconfigure(0, weight=1)
-        
-        tk.Label(
-            content_frame,
-            text="📈 Sales Report",
-            font=("Arial", 16, "bold"),
-            bg='#f8f9fa', fg='#2c3e50'
+      """Show detailed sales report"""
+      self.clear_content()
+
+      content_frame = tk.Frame(self.main_frame, bg='#f8f9fa')
+      content_frame.grid(row=1, column=0, sticky='nsew')
+      content_frame.grid_rowconfigure(1, weight=1)
+      content_frame.grid_columnconfigure(0, weight=1)
+
+      tk.Label(
+        content_frame,
+        text="📈 Sales Report",
+        font=("Arial", 16, "bold"),
+        bg='#f8f9fa', fg='#2c3e50'
         ).grid(row=0, column=0, pady=15)
-        
-        # Report frame
-        report_frame = tk.Frame(content_frame, bg='white', relief='raised', bd=1)
-        report_frame.grid(row=1, column=0, sticky='nsew', padx=20, pady=10)
-        report_frame.grid_rowconfigure(0, weight=1)
-        report_frame.grid_columnconfigure(0, weight=1)
-        
-        # Calculate sales data
-        vegetable_sales = {}
-        for order in self.orders:
-            veg_name = order.get("name", "")
-            amount = order.get("amount", 0)
-            if veg_name in vegetable_sales:
-                vegetable_sales[veg_name]["orders"] += 1
-                vegetable_sales[veg_name]["revenue"] += amount
-            else:
-                vegetable_sales[veg_name] = {"orders": 1, "revenue": amount}
-        
-        # Create treeview for sales report
-        columns = ("Vegetable", "Orders", "Revenue (Rs)", "Avg. Order Value")
+
+      report_frame = tk.Frame(content_frame, bg='white', relief='raised', bd=1)
+      report_frame.grid(row=1, column=0, sticky='nsew', padx=20, pady=10)
+      report_frame.grid_rowconfigure(0, weight=1)
+      report_frame.grid_columnconfigure(0, weight=1)
+
+    # Calculate sales data
+      vegetable_sales = {}
+      for order in self.orders:
+        veg_name = order.get("name", "")
+        amount = order.get("amount", 0)
+        profit = order.get("profit", 0)
+
+        # Get cost per kg from vegetable database
+        cost_per_kg = self.vegetables.get(veg_name, {}).get("cost", 0)
+
+        # Convert quantity string like "2kg" or "500g" to float in kg
+        quantity_str = order.get("quantity", "0kg").lower()
+        if quantity_str.endswith("kg"):
+            try:
+                quantity = float(quantity_str.replace("kg", ""))
+            except ValueError:
+                quantity = 0
+        elif quantity_str.endswith("g"):
+            try:
+                quantity = float(quantity_str.replace("g", "")) / 1000
+            except ValueError:
+                quantity = 0
+        else:
+            quantity = 0
+
+        if veg_name in vegetable_sales:
+            vegetable_sales[veg_name]["orders"] += 1
+            vegetable_sales[veg_name]["quantity"] += quantity
+            vegetable_sales[veg_name]["revenue"] += amount
+            vegetable_sales[veg_name]["profit"] += profit
+        else:
+            vegetable_sales[veg_name] = {
+                "orders": 1,
+                "quantity": quantity,
+                "revenue": amount,
+                "profit": profit,
+                "cost": cost_per_kg
+            }
+
+    # Create treeview
+        columns = ("Vegetable", "Cost (Rs/kg)", "Quantity (kg)", "Profit (Rs)", "Revenue (Rs)", "Avg. Revenue (Rs)")
         tree = ttk.Treeview(report_frame, columns=columns, show="headings", height=15)
-        
+
         for col in columns:
-            tree.heading(col, text=col)
-            tree.column(col, width=150, anchor="center")
-        
-        # Add scrollbar
+         tree.heading(col, text=col)
+         tree.column(col, width=150, anchor="center")
+
         scrollbar = ttk.Scrollbar(report_frame, orient="vertical", command=tree.yview)
         tree.configure(yscrollcommand=scrollbar.set)
-        
+
         tree.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
-        
-        # Populate sales data
-        if vegetable_sales:
-            for veg_name, data in sorted(vegetable_sales.items(), key=lambda x: x[1]["revenue"], reverse=True):
-                avg_value = data["revenue"] / data["orders"] if data["orders"] > 0 else 0
-                tree.insert("", "end", values=(
-                    veg_name.capitalize(),
-                    data["orders"],
-                    f"{data['revenue']:.2f}",
-                    f"{avg_value:.2f}"
-                ))
-        else:
-            tree.insert("", "end", values=("No sales data available", "", "", ""))
 
-    def backup_data(self):
-        """Create a backup of the data"""
-        try:
-            backup_filename = f"vegetable_market_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-            data = {
-                "vegetables": self.vegetables,
-                "orders": self.orders,
-                "backup_date": datetime.now().isoformat()
-            }
-            
-            with open(backup_filename, "w") as file:
-                json.dump(data, file, indent=4)
-            
-            self.show_message(f"Data backed up successfully to {backup_filename}", "success")
-        except Exception as e:
-            self.show_message(f"Backup failed: {e}", "error")
+    # Populate data
+        if vegetable_sales:
+         for veg_name, data in sorted(vegetable_sales.items(), key=lambda x: x[1]["revenue"], reverse=True):
+            avg_revenue = data["revenue"] / data["orders"] if data["orders"] > 0 else 0
+            tree.insert("", "end", values=(
+                veg_name.capitalize(),
+                f"{data['cost']:.2f}",
+                f"{data['quantity']:.2f}",
+                f"{data['profit']:.2f}",
+                f"{data['revenue']:.2f}",
+                f"{avg_revenue:.2f}"
+            ))
+        else:
+         tree.insert("", "end", values=("No sales data available", "", "", "", "", ""))
 
     def clear_all_data(self):
         """Clear all data with confirmation"""

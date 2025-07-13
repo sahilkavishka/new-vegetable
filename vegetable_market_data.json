@@ -1,22 +1,18 @@
 {
     "vegetables": {
-        "tomato": {
-            "price": 40.0,
-            "stock": 411.0
+        "tomatto": {
+            "price": 80.0,
+            "stock": 80.0,
+            "cost": 45.0
         }
     },
     "orders": [
         {
-            "name": "tomato",
-            "quantity": "2.0kg",
-            "amount": 80.0,
-            "date": "2025-06-28 23:11:08"
-        },
-        {
-            "name": "tomato",
-            "quantity": "5.0kg",
-            "amount": 200.0,
-            "date": "2025-06-28 23:11:33"
+            "name": "tomatto",
+            "quantity": "20.0kg",
+            "amount": 1600.0,
+            "date": "2025-07-12 17:40:42",
+            "profit": 700.0
         }
     ]
 }

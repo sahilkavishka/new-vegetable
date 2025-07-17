@@ -964,7 +964,7 @@ class VegetableMarket:
         text="📈 Sales Report",
         font=("Arial", 16, "bold"),
         bg='#f8f9fa', fg='#2c3e50'
-        ).grid(row=0, column=0, pady=15)
+      ).grid(row=0, column=0, pady=15)
 
       report_frame = tk.Frame(content_frame, bg='white', relief='raised', bd=1)
       report_frame.grid(row=1, column=0, sticky='nsew', padx=20, pady=10)
@@ -984,15 +984,9 @@ class VegetableMarket:
         # Convert quantity string like "2kg" or "500g" to float in kg
         quantity_str = order.get("quantity", "0kg").lower()
         if quantity_str.endswith("kg"):
-            try:
-                quantity = float(quantity_str.replace("kg", ""))
-            except ValueError:
-                quantity = 0
+            quantity = float(quantity_str.replace("kg", ""))
         elif quantity_str.endswith("g"):
-            try:
-                quantity = float(quantity_str.replace("g", "")) / 1000
-            except ValueError:
-                quantity = 0
+            quantity = float(quantity_str.replace("g", "")) / 1000
         else:
             quantity = 0
 
@@ -1010,34 +1004,52 @@ class VegetableMarket:
                 "cost": cost_per_kg
             }
 
-    # Create treeview
-        columns = ("Vegetable", "Cost (Rs/kg)", "Quantity (kg)", "Profit (Rs)", "Revenue (Rs)", "Avg. Revenue (Rs)")
-        tree = ttk.Treeview(report_frame, columns=columns, show="headings", height=15)
+    # Create treeview for sales report
+      columns = ("Vegetable", "Cost (Rs/kg)", "Quantity (kg)", "Profit (Rs)", "revenue","avg_revenue")
+      tree = ttk.Treeview(report_frame, columns=columns, show="headings", height=15)
 
-        for col in columns:
-         tree.heading(col, text=col)
-         tree.column(col, width=150, anchor="center")
+      for col in columns:
+        tree.heading(col, text=col)
+        tree.column(col, width=150, anchor="center")
 
-        scrollbar = ttk.Scrollbar(report_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
+      scrollbar = ttk.Scrollbar(report_frame, orient="vertical", command=tree.yview)
+      tree.configure(yscrollcommand=scrollbar.set)
 
-        tree.grid(row=0, column=0, sticky='nsew')
-        scrollbar.grid(row=0, column=1, sticky='ns')
+      tree.grid(row=0, column=0, sticky='nsew')
+      scrollbar.grid(row=0, column=1, sticky='ns')
 
     # Populate data
-        if vegetable_sales:
+      if vegetable_sales:
          for veg_name, data in sorted(vegetable_sales.items(), key=lambda x: x[1]["revenue"], reverse=True):
-            avg_revenue = data["revenue"] / data["orders"] if data["orders"] > 0 else 0
+            avg_value = data["revenue"] / data["orders"] if data["orders"] > 0 else 0
             tree.insert("", "end", values=(
                 veg_name.capitalize(),
                 f"{data['cost']:.2f}",
                 f"{data['quantity']:.2f}",
                 f"{data['profit']:.2f}",
                 f"{data['revenue']:.2f}",
-                f"{avg_revenue:.2f}"
+                f"{avg_value:.2f}"
             ))
-        else:
-         tree.insert("", "end", values=("No sales data available", "", "", "", "", ""))
+      else:
+        tree.insert("", "end", values=("No sales data available", "", "", "", ""))
+
+
+    def backup_data(self):
+        """Create a backup of the data"""
+        try:
+            backup_filename = f"vegetable_market_backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            data = {
+                "vegetables": self.vegetables,
+                "orders": self.orders,
+                "backup_date": datetime.now().isoformat()
+            }
+            
+            with open(backup_filename, "w") as file:
+                json.dump(data, file, indent=4)
+            
+            self.show_message(f"Data backed up successfully to {backup_filename}", "success")
+        except Exception as e:
+            self.show_message(f"Backup failed: {e}", "error")
 
     def clear_all_data(self):
         """Clear all data with confirmation"""

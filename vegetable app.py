@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-"""
-Enhanced Vegetable Market Management System
-A comprehensive single-window GUI application for managing vegetable inventory and orders
-"""
 
 import json
 import tkinter as tk
